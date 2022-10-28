@@ -9,18 +9,21 @@
 #include <random>
 #include <windows.h>
 
-#define ip input
 #define str std::string
 #define elif else if
 #define CTRL(c) ((c) & 037)
 
 std::ifstream inAlphabet("Alphabet.txt");
 
+int ap[25], currIndex;
+str givenWord;
+
 class Alphabet
 {
     public :
         int len;
         str word[11500];
+
         str randomWord()
         {
             srand(time(NULL));
@@ -29,125 +32,135 @@ class Alphabet
             int x = mt() % len, y = len - 1 - (mt() % len);
             return pick ? word[x] : word[y]; 
         }
+
     private :
         friend std::ifstream & operator >> (std::ifstream &in, Alphabet &input)
         {
             input.len = 0;
-            while (in >> ip.word[ip.len])
-                ++ip.len;
+            while (in >> input.word[input.len])
+                ++input.len;
             return in;
         }
-};
+
+} input;
 
 class Character
 {
     public :
-        char ch0, ch1, ch2, ch3, ch4;
+        char ch[5];
+        int color[5];
         bool usedColor;
+
         void defaultValue()
         {
-            ch0 = ch1 = ch2 = ch3 = ch4 = ' ';
+            for (int i = 0; i < 5; ++i)
+            {
+                ch[i] = ' ';
+                color[i] = 3;
+            }
             usedColor = false;
         }
-        void giveCh(int i, char c)
+
+        void output(int i)
         {
-            if (!i)
-                ch0 = c;
-            elif (i == 1)
-                ch1 = c;
-            elif (i == 2)
-                ch2 = c;
-            elif (i == 3)
-                ch3 = c;
+            if (color[i] == 1)
+                std::cout << dye::on_green(ch[i]).invert();
+            elif (color[i] == 2)
+                std::cout << dye::on_yellow(ch[i]).invert();
             else
-                ch4 = c;
+                std::cout << ch[i];
         }
-};
 
-void cls()
-{
-    HANDLE hOut;
-    COORD Position;
-    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    Position.X = 0;
-    Position.Y = 0;
-    SetConsoleCursorPosition(hOut, Position);
-}
+} currLane[11500];
 
-bool foundSolution(str myWord, str givenWord)
+class Read
 {
-    return myWord == givenWord;
-}
+    private :
+        char input[5];
 
-char status(char ch, str givenWord, int index)
-{
-    if (ch == givenWord[index])
-        return '1';
-    for (int i = 0; i < givenWord.length(); ++i)
-        if (ch == givenWord[i])
-            return '2';
-    return '3';
-}
+        void read(int index, bool color)
+        {
+            if (!index)
+                std::cout << " _____ _____ _____ _____ _____ \n";
+            std::cout << "|     |     |     |     |     |\n|  " ;
+            for (int i = 0; i < 5; ++i)
+            {
+                if (color)
+                    currLane[index].output(i);
+                else
+                    std::cout << currLane[index].ch[i];
+                if (i != 4)
+                    std::cout << "  |  ";
+            }
+            std::cout << "  |\n|_____|_____|_____|_____|_____|\n";
+        }
 
-void statusOutput(char status, char ch)
-{
-    if (status == '1')
-        std::cout << dye::on_green(ch).invert();
-    elif (status == '2')
-        std::cout << dye::on_yellow(ch).invert();
-    else
-        std::cout << ch;
-}
+    public :
+        void clearScreen()
+        {
+            HANDLE hOut;
+            COORD Position;
+            hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            Position.X = 0;
+            Position.Y = 0;
+            SetConsoleCursorPosition(hOut, Position);
+        }
 
-void readInputNoColor(int i, str givenWord, Character ch[])
-{
-    if (!i)
-        std::cout << " _____ _____ _____ _____ _____ \n";
-    std::cout << "|     |     |     |     |     |\n";
-    std::cout << "|  " << ch[i].ch0 << "  |  " << ch[i].ch1 << "  |  " << ch[i].ch2 << "  |  " << ch[i].ch3 << "  |  " << ch[i].ch4 << "  |\n";
-    std::cout << "|_____|_____|_____|_____|_____|\n";
-}
+        void noColor(int index)
+        {
+            read(index, 0);
+        }
 
-void readInputWithColor(int i, str givenWord, Character ch[])
-{
-    Character o;
-    o.ch0 = status(ch[i].ch0, givenWord, 0);
-    o.ch1 = status(ch[i].ch1, givenWord, 1);
-    o.ch2 = status(ch[i].ch2, givenWord, 2);
-    o.ch3 = status(ch[i].ch3, givenWord, 3);
-    o.ch4 = status(ch[i].ch4, givenWord, 4);
-    if (o.ch0 != '3' || o.ch1 != '3' || o.ch2 != '3' || o.ch3 != '3' || o.ch4 != '3')
-        ch[i].usedColor = true;
-    if (!i)
-        std::cout << " _____ _____ _____ _____ _____ \n";
-    std::cout << "|     |     |     |     |     |\n";
-    std::cout << "|  " ;
-    statusOutput(o.ch0, ch[i].ch0);
-    std::cout << "  |  ";
-    statusOutput(o.ch1, ch[i].ch1); 
-    std::cout << "  |  ";
-    statusOutput(o.ch2, ch[i].ch2);
-    std::cout << "  |  ";
-    statusOutput(o.ch3, ch[i].ch3);
-    std::cout << "  |  ";
-    statusOutput(o.ch4, ch[i].ch4);
-    std::cout << "  |\n";
-    std::cout << "|_____|_____|_____|_____|_____|\n";
-}
+        void color(int index)
+        {
+            for (int i = 0; i < 5 && !currLane[index].usedColor; ++i)
+                currLane[index].usedColor = (currLane[index].color[i] != 3);
+            read(index, 1);
+        }
 
-void wordleTableNoColor(int index, str currWord, Character ch[])
-{
-    for (int i = 0; i <= index; ++i)
-        if (ch[i].usedColor)
-            readInputWithColor(i, currWord, ch);
-        else
-            readInputNoColor(i, currWord, ch);
-}
+} readInput;
 
-void wordleTableColor(int index, str currWord, Character ch[])
+class Table
+{   
+    public :
+        void noColor()
+        {
+            for (int i = 0; i <= currIndex; ++i)
+                if (currLane[i].usedColor)
+                    readInput.color(i);
+                else
+                    readInput.noColor(i);
+        }
+
+        void color()
+        {
+            for (int i = 0; i <= currIndex; ++i)
+                readInput.color(i);
+        }
+
+} wordle;
+
+void checkStatus()
 {
-    for (int i = 0; i <= index; ++i)
-        readInputWithColor(i, currWord, ch);
+    for (int i = 0; i < 25; ++i)
+        ap[i] = 0;
+    for (int i = 0; i < 5; ++i)
+        ++ap[(int)(givenWord[i] - 65)];
+    for (int i = 0; i < 5; ++i)
+        if (currLane[currIndex].ch[i] == givenWord[i])
+        {
+            currLane[currIndex].color[i] = 1;
+            --ap[(int)(currLane[currIndex].ch[i] - 65)];
+        }
+    for (int i = 0; i < 5; ++i)
+    {
+        int j = givenWord.find(currLane[currIndex].ch[i]);
+        if (j != std::string::npos && j != i && ap[(int)(currLane[currIndex].ch[i] - 65)] && currLane[currIndex].color[i] == 3)
+        {
+            currLane[currIndex].color[i] = 2;
+            --ap[(int)(currLane[currIndex].ch[i] - 65)];
+        }
+    }
 }
 
 char goodInput(char ch, bool &end)
@@ -160,69 +173,52 @@ char goodInput(char ch, bool &end)
         end = true;
         return '0';
     }
-    while (ch <= 'A' || ch >= 'Z' || ch == '\r')
+    while (ch <= 'A' || ch >= 'Z' || ch == '\r' || ch == 127)
         ch = getch();
     return ch;
 }
 
-int binarySearch(Alphabet input, str currWord)
-{
-    int left = 0, right = input.len + 1, middle;
-    while (left < right)
-    {
-        middle = left + (right - left) / 2;
-        std::cout << input.word[middle] << '\n';
-        if (!currWord.compare(input.word[middle]))
-            return middle;
-        elif (currWord.compare(input.word[middle]) > 0)
-            left = middle + 1;
-        else
-            right = middle - 1;
-    }
-    return -1;
-}
-
 int main()
 {
-    int index = 0, step;
+    int step;
     char c;
     bool end;
-    Character currLane[11500];
-    Alphabet input;
     inAlphabet >> input;
-    str givenWord = ip.randomWord(), currWord = "";
+    givenWord = input.randomWord();
+    str currWord = "";
     system("cls");
-    cls();
+    readInput.clearScreen();
     currLane[0].defaultValue();
-    wordleTableNoColor(0, givenWord, currLane);
-    while (!foundSolution(givenWord, currWord))
+    wordle.noColor();
+    while (currWord != givenWord && !end)
     {
-        currLane[index].defaultValue();
+        currLane[currIndex].defaultValue();
         for (int i = 0; i < 5; ++i)
         {
             end = false;
             c = goodInput(getch(), end);
             if (end)
-                return 0;
-            currLane[index].giveCh(i, c);
-            cls();
-    
+                break;
+            currLane[currIndex].ch[i] = c;
+            readInput.clearScreen();
             if (i == 4)
-                wordleTableColor(index, givenWord, currLane);
+            {
+                checkStatus();
+                wordle.color();
+            }
             else
-                wordleTableNoColor(index, givenWord, currLane);
+                wordle.noColor();
             currWord.push_back(c);
         }
         step = (binary_search(input.word, input.word + input.len, currWord));
         if (givenWord != currWord)
         {
             currWord = "";
-            currLane[index + step].defaultValue();
-            cls();
-    
-            wordleTableColor(index + step, givenWord, currLane);
+            currLane[currIndex + step].defaultValue();
+            readInput.clearScreen();
             if (step)
-                ++index;
+                ++currIndex;
+            wordle.color();
         }
     }
     return 0;
